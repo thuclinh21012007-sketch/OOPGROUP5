@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CloudCost Optimizer – Mô phỏng chi phí đa đám mây</title>
+  <meta name="description" content="Hệ thống mô phỏng và tối ưu chi phí hạ tầng đám mây AWS, GCP và Azure. So sánh chi phí Compute, Storage, Database theo thời gian thực." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- ── Sidebar ───────────────────────────────────────────── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <rect width="32" height="32" rx="8" fill="url(#lg1)"/>
+          <path d="M8 22 L14 12 L20 18 L24 10" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="24" cy="10" r="2" fill="#00d4ff"/>
+          <defs><linearGradient id="lg1" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#0066ff"/><stop offset="1" stop-color="#00d4ff"/>
+          </linearGradient></defs>
+        </svg>
+      </div>
+      <div class="logo-text">
+        <span class="logo-main">CloudCost</span>
+        <span class="logo-sub">Optimizer</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Thêm tài nguyên</div>
+      <a href="#" class="nav-item" id="nav-compute" onclick="showPanel('compute')">
+        <span class="nav-icon">⚡</span><span>Thêm máy chủ</span>
+      </a>
+      <a href="#" class="nav-item" id="nav-storage" onclick="showPanel('storage')">
+        <span class="nav-icon">💾</span><span>Thêm lưu trữ</span>
+      </a>
+      <a href="#" class="nav-item" id="nav-database" onclick="showPanel('database')">
+        <span class="nav-icon">🗄️</span><span>Thêm Database</span>
+      </a>
+
+      <div class="nav-section-label">Phân tích</div>
+      <a href="#" class="nav-item" id="nav-infra" onclick="showPanel('infra')">
+        <span class="nav-icon">🏗️</span><span>Hạ tầng đã thiết kế</span>
+      </a>
+      <a href="#" class="nav-item active" id="nav-costs" onclick="showPanel('costs')">
+        <span class="nav-icon">📊</span><span>So sánh chi phí</span>
+      </a>
+      <a href="#" class="nav-item" id="nav-detail" onclick="showPanel('detail')">
+        <span class="nav-icon">🔍</span><span>Chi tiết theo hãng</span>
+      </a>
+      <a href="#" class="nav-item" id="nav-recs" onclick="showPanel('recs')">
+        <span class="nav-icon">💡</span><span>Khuyến nghị tối ưu</span>
+      </a>
+
+      <div class="nav-section-label">Xuất / Kiểm thử</div>
+      <a href="#" class="nav-item" id="nav-export" onclick="exportCSV()">
+        <span class="nav-icon">📥</span><span>Xuất báo cáo CSV</span>
+      </a>
+      <a href="#" class="nav-item" id="nav-tests" onclick="showPanel('tests')">
+        <span class="nav-icon">🧪</span><span>Chạy kiểm thử</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="region-badge">
+        <span class="dot"></span> ap-southeast-1
+      </div>
+      <div class="footer-note">Giá mô phỏng – không cam kết</div>
+    </div>
+  </aside>
+
+  <!-- ── Main ─────────────────────────────────────────────── -->
+  <div class="main-wrapper">
+    <!-- Top bar -->
+    <header class="topbar">
+      <button class="topbar-menu-btn" onclick="toggleSidebar()" title="Toggle sidebar">☰</button>
+      <div class="topbar-title" id="topbar-title">Dashboard – So sánh chi phí</div>
+      <div class="topbar-right">
+        <div class="infra-badge" id="infra-badge">
+          <span id="infra-count">0</span> tài nguyên
+        </div>
+        <button class="btn-reset-sm" onclick="clearAll()" title="Xóa tất cả tài nguyên và reset số liệu về 0">
+          🗑️ Reset
+        </button>
+        <button class="btn-primary-sm" onclick="calculateAll()">
+          <span>▶</span> Tính chi phí
+        </button>
+      </div>
+    </header>
+
+    <!-- Content panels -->
+    <main class="content" id="content">
+
+      <!-- ═══ PANEL: COST COMPARISON (default) ═══ -->
+      <section class="panel active" id="panel-costs">
+        <div class="panel-header">
+          <h1>So sánh chi phí – AWS / GCP / Azure</h1>
+          <p class="panel-sub">Giá mô phỏng (USD/tháng). Thêm tài nguyên bên trái rồi nhấn "Tính chi phí".</p>
+        </div>
+
+        <!-- Provider cards -->
+        <div class="provider-cards" id="provider-cards">
+          <!-- AWS -->
+          <div class="provider-card" id="card-aws">
+            <div class="card-header">
+              <div class="provider-badge aws"><span>AWS</span></div>
+              <div class="provider-name">
+                <div class="pname">Amazon Web Services</div>
+                <div class="ptag">Nhà cung cấp</div>
+              </div>
+              <div class="cheapest-badge" id="badge-aws" style="display:none">Rẻ nhất ✓</div>
+            </div>
+            <div class="card-total" id="total-aws">–</div>
+            <div class="card-sub">USD / tháng</div>
+            <div class="card-breakdown">
+              <div class="breakdown-item"><span class="bk-label">⚡ Compute</span><span class="bk-val" id="aws-compute">–</span></div>
+              <div class="breakdown-item"><span class="bk-label">💾 Storage</span><span class="bk-val" id="aws-storage">–</span></div>
+              <div class="breakdown-item"><span class="bk-label">🗄️ Database</span><span class="bk-val" id="aws-database">–</span></div>
+            </div>
+            <div class="card-annual" id="annual-aws"></div>
+          </div>
+
+          <!-- GCP -->
+          <div class="provider-card" id="card-gcp">
+            <div class="card-header">
+              <div class="provider-badge gcp"><span>GCP</span></div>
+              <div class="provider-name">
+                <div class="pname">Google Cloud Platform</div>
+                <div class="ptag">Nhà cung cấp</div>
+              </div>
+              <div class="cheapest-badge" id="badge-gcp" style="display:none">Rẻ nhất ✓</div>
+            </div>
+            <div class="card-total" id="total-gcp">–</div>
+            <div class="card-sub">USD / tháng</div>
+            <div class="card-breakdown">
+              <div class="breakdown-item"><span class="bk-label">⚡ Compute</span><span class="bk-val" id="gcp-compute">–</span></div>
+              <div class="breakdown-item"><span class="bk-label">💾 Storage</span><span class="bk-val" id="gcp-storage">–</span></div>
+              <div class="breakdown-item"><span class="bk-label">🗄️ Database</span><span class="bk-val" id="gcp-database">–</span></div>
+            </div>
+            <div class="card-annual" id="annual-gcp"></div>
+          </div>
+
+          <!-- Azure -->
+          <div class="provider-card" id="card-azure">
+            <div class="card-header">
+              <div class="provider-badge azure"><span>Azure</span></div>
+              <div class="provider-name">
+                <div class="pname">Microsoft Azure</div>
+                <div class="ptag">Nhà cung cấp</div>
+              </div>
+              <div class="cheapest-badge" id="badge-azure" style="display:none">Rẻ nhất ✓</div>
+            </div>
+            <div class="card-total" id="total-azure">–</div>
+            <div class="card-sub">USD / tháng</div>
+            <div class="card-breakdown">
+              <div class="breakdown-item"><span class="bk-label">⚡ Compute</span><span class="bk-val" id="azure-compute">–</span></div>
+              <div class="breakdown-item"><span class="bk-label">💾 Storage</span><span class="bk-val" id="azure-storage">–</span></div>
+              <div class="breakdown-item"><span class="bk-label">🗄️ Database</span><span class="bk-val" id="azure-database">–</span></div>
+            </div>
+            <div class="card-annual" id="annual-azure"></div>
+          </div>
+        </div>
+
+        <!-- Bar chart -->
+        <div class="chart-container glass-card">
+          <div class="chart-header">
+            <h2>Biểu đồ so sánh chi phí theo danh mục</h2>
+            <div class="chart-legend">
+              <span class="legend-dot aws-dot"></span><span>AWS</span>
+              <span class="legend-dot gcp-dot"></span><span>GCP</span>
+              <span class="legend-dot azure-dot"></span><span>Azure</span>
+            </div>
+          </div>
+          <div class="bar-chart" id="bar-chart">
+            <div class="chart-placeholder" id="chart-placeholder">
+              <div class="placeholder-icon">📊</div>
+              <div>Thêm tài nguyên và nhấn <strong>"Tính chi phí"</strong> để xem biểu đồ</div>
+            </div>
+            <div class="chart-bars" id="chart-bars" style="display:none">
+              <div class="chart-group" id="cg-compute">
+                <div class="bar-group">
+                  <div class="bar aws-bar" id="b-aws-c"><span class="bar-label" id="bl-aws-c"></span></div>
+                  <div class="bar gcp-bar" id="b-gcp-c"><span class="bar-label" id="bl-gcp-c"></span></div>
+                  <div class="bar azure-bar" id="b-azure-c"><span class="bar-label" id="bl-azure-c"></span></div>
+                </div>
+                <div class="bar-category">⚡ Compute</div>
+              </div>
+              <div class="chart-group" id="cg-storage">
+                <div class="bar-group">
+                  <div class="bar aws-bar" id="b-aws-s"><span class="bar-label" id="bl-aws-s"></span></div>
+                  <div class="bar gcp-bar" id="b-gcp-s"><span class="bar-label" id="bl-gcp-s"></span></div>
+                  <div class="bar azure-bar" id="b-azure-s"><span class="bar-label" id="bl-azure-s"></span></div>
+                </div>
+                <div class="bar-category">💾 Storage</div>
+              </div>
+              <div class="chart-group" id="cg-database">
+                <div class="bar-group">
+                  <div class="bar aws-bar" id="b-aws-d"><span class="bar-label" id="bl-aws-d"></span></div>
+                  <div class="bar gcp-bar" id="b-gcp-d"><span class="bar-label" id="bl-gcp-d"></span></div>
+                  <div class="bar azure-bar" id="b-azure-d"><span class="bar-label" id="bl-azure-d"></span></div>
+                </div>
+                <div class="bar-category">🗄️ Database</div>
+              </div>
+              <div class="chart-group" id="cg-total">
+                <div class="bar-group">
+                  <div class="bar aws-bar" id="b-aws-t"><span class="bar-label" id="bl-aws-t"></span></div>
+                  <div class="bar gcp-bar" id="b-gcp-t"><span class="bar-label" id="bl-gcp-t"></span></div>
+                  <div class="bar azure-bar" id="b-azure-t"><span class="bar-label" id="bl-azure-t"></span></div>
+                </div>
+                <div class="bar-category">📦 Tổng</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Time conversion table -->
+        <div class="glass-card" id="time-table-card" style="display:none">
+          <h2>Quy đổi theo thời gian</h2>
+          <div class="table-wrap">
+            <table class="data-table" id="time-table">
+              <thead><tr>
+                <th>Hãng</th><th>/ Giờ</th><th>/ Ngày</th><th>/ Tháng</th><th>/ Năm</th>
+              </tr></thead>
+              <tbody id="time-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ PANEL: ADD COMPUTE ═══ -->
+      <section class="panel" id="panel-compute">
+        <div class="panel-header">
+          <h1>⚡ Thêm máy chủ (Compute)</h1>
+          <p class="panel-sub">Nhập thông số máy chủ ảo (VM). Có thể thêm nhiều cấu hình.</p>
+        </div>
+        <div class="form-card glass-card">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="c-qty">Số lượng máy chủ</label>
+              <input type="number" id="c-qty" min="1" max="100" value="1" placeholder="1" />
+            </div>
+            <div class="form-group">
+              <label for="c-vcpu">Số vCPU / máy</label>
+              <input type="number" id="c-vcpu" min="1" max="128" value="4" placeholder="4" />
+            </div>
+            <div class="form-group">
+              <label for="c-ram">RAM / máy (GB)</label>
+              <input type="number" id="c-ram" min="1" max="1024" value="16" placeholder="16" />
+            </div>
+            <div class="form-group">
+              <label for="c-usage">Mức sử dụng giả định (%)</label>
+              <input type="number" id="c-usage" min="1" max="100" value="70" placeholder="70" />
+              <div class="form-hint">TV4 RightSizing sẽ tối ưu nếu &lt; 40%</div>
+            </div>
+          </div>
+          <div class="form-preview" id="compute-preview">
+            <div class="preview-label">Xem trước:</div>
+            <div class="preview-text" id="compute-preview-text">1 × VM (4 vCPU / 16 GB RAM) – sử dụng 70%</div>
+          </div>
+          <div class="form-actions">
+            <button class="btn-primary" id="btn-add-compute" onclick="addCompute()">
+              <span>+</span> Thêm máy chủ
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ PANEL: ADD STORAGE ═══ -->
+      <section class="panel" id="panel-storage">
+        <div class="panel-header">
+          <h1>💾 Thêm lưu trữ (Storage)</h1>
+          <p class="panel-sub">Nhập dung lượng lưu trữ đối tượng / block.</p>
+        </div>
+        <div class="form-card glass-card">
+          <div class="form-grid single">
+            <div class="form-group">
+              <label for="s-size">Dung lượng (GB)</label>
+              <input type="number" id="s-size" min="1" max="100000" value="500" placeholder="500" />
+            </div>
+          </div>
+          <div class="form-preview">
+            <div class="preview-label">Xem trước:</div>
+            <div class="preview-text" id="storage-preview-text">500 GB lưu trữ đối tượng</div>
+          </div>
+          <div class="form-actions">
+            <button class="btn-primary" onclick="addStorage()"><span>+</span> Thêm lưu trữ</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ PANEL: ADD DATABASE ═══ -->
+      <section class="panel" id="panel-database">
+        <div class="panel-header">
+          <h1>🗄️ Thêm Database</h1>
+          <p class="panel-sub">Chọn engine cơ sở dữ liệu quản lý (Managed DB).</p>
+        </div>
+        <div class="form-card glass-card">
+          <div class="form-group">
+            <label>Engine Database</label>
+            <div class="db-engine-select">
+              <div class="engine-option selected" id="eng-pg" onclick="selectEngine('PostgreSQL')">
+                <div class="engine-icon">🐘</div>
+                <div class="engine-name">PostgreSQL</div>
+                <div class="engine-tag">Open Source</div>
+              </div>
+              <div class="engine-option" id="eng-my" onclick="selectEngine('MySQL')">
+                <div class="engine-icon">🐬</div>
+                <div class="engine-name">MySQL</div>
+                <div class="engine-tag">Open Source</div>
+              </div>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn-primary" onclick="addDatabase()"><span>+</span> Thêm Database</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ PANEL: INFRA ═══ -->
+      <section class="panel" id="panel-infra">
+        <div class="panel-header">
+          <h1>🏗️ Hạ tầng đã thiết kế</h1>
+          <p class="panel-sub">Danh sách tài nguyên đã nhập. Nhấn 🗑️ để xóa từng mục.</p>
+        </div>
+        <div class="glass-card">
+          <div id="infra-empty" class="empty-state">
+            <div class="empty-icon">🏗️</div>
+            <div>Chưa có tài nguyên nào. Hãy thêm từ menu bên trái.</div>
+          </div>
+          <div class="table-wrap" id="infra-table-wrap" style="display:none">
+            <table class="data-table">
+              <thead><tr><th>#</th><th>Loại</th><th>Chi tiết</th><th>Hành động</th></tr></thead>
+              <tbody id="infra-tbody"></tbody>
+            </table>
+          </div>
+          <div class="infra-actions" id="infra-actions" style="display:none">
+            <button class="btn-danger" onclick="clearAll()">🗑️ Xóa tất cả</button>
+            <button class="btn-primary" onclick="calculateAll()">▶ Tính chi phí ngay</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ PANEL: DETAIL ═══ -->
+      <section class="panel" id="panel-detail">
+        <div class="panel-header">
+          <h1>🔍 Chi tiết chi phí từng hãng</h1>
+          <p class="panel-sub">Phân tích chi phí theo từng dòng tài nguyên cho mỗi nhà cung cấp.</p>
+        </div>
+        <div id="detail-content">
+          <div class="empty-state">
+            <div class="empty-icon">🔍</div>
+            <div>Nhấn <strong>"Tính chi phí"</strong> để xem chi tiết.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ PANEL: RECOMMENDATIONS ═══ -->
+      <section class="panel" id="panel-recs">
+        <div class="panel-header">
+          <h1>💡 Khuyến nghị tối ưu chi phí</h1>
+          <p class="panel-sub">Dựa trên 3 chiến lược: Cheapest Provider, Right-Sizing, Reserved Pricing.</p>
+        </div>
+        <div id="recs-content">
+          <div class="empty-state">
+            <div class="empty-icon">💡</div>
+            <div>Nhấn <strong>"Tính chi phí"</strong> để xem khuyến nghị.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ PANEL: TESTS ═══ -->
+      <section class="panel" id="panel-tests">
+        <div class="panel-header">
+          <h1>🧪 Bộ kiểm thử TV3 (25 Test Cases)</h1>
+          <p class="panel-sub">Kiểm tra tự động toàn bộ engine tính giá và mô phỏng.</p>
+        </div>
+        <div class="glass-card" id="test-results">
+          <div class="test-run-area">
+            <button class="btn-primary btn-large" onclick="runTests()">▶ Chạy kiểm thử</button>
+          </div>
+          <div id="test-output" style="display:none"></div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ── Toast notification ── -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
