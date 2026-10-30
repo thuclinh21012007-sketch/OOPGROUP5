@@ -1,0 +1,7 @@
+{
+  "prices": [
+    {"provider":"GCP","resourceType":"Compute","sku":"vcpu-4-ram-16","region":"us-east-1","unit":"USD/hour","price":0.1890,"pricingModel":"OnDemand","source":"mock-json"},
+    {"provider":"GCP","resourceType":"Storage","sku":"standard-storage","region":"us-east-1","unit":"USD/GB-month","price":0.020,"pricingModel":"OnDemand","source":"mock-json"},
+    {"provider":"GCP","resourceType":"Database","sku":"PostgreSQL","region":"us-east-1","unit":"USD/hour","price":0.075,"pricingModel":"OnDemand","source":"mock-json"}
+  ]
+}
