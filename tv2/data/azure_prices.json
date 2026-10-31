@@ -1,7 +1,0 @@
-{
-  "prices": [
-    {"provider":"Azure","resourceType":"Compute","sku":"vcpu-4-ram-16","region":"us-east-1","unit":"USD/hour","price":0.1920,"pricingModel":"OnDemand","source":"mock-json"},
-    {"provider":"Azure","resourceType":"Storage","sku":"standard-storage","region":"us-east-1","unit":"USD/GB-month","price":0.0184,"pricingModel":"OnDemand","source":"mock-json"},
-    {"provider":"Azure","resourceType":"Database","sku":"PostgreSQL","region":"us-east-1","unit":"USD/hour","price":0.079,"pricingModel":"OnDemand","source":"mock-json"}
-  ]
-}
