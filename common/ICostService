@@ -1,0 +1,16 @@
+#pragma once
+// =====================================================================
+// [CHUNG] ICostService.h - Interface hop dong giua UI va Backend
+// UI chi phu thuoc vao interface nay, khong phu thuoc vao logic ben duoi.
+// =====================================================================
+#include "Types.h"
+#include <vector>
+
+using namespace std;
+
+class ICostService {
+public:
+    virtual ~ICostService() = default;
+    virtual vector<ProviderCost> calculate(const vector<ResourceInput>& infra) = 0;
+    virtual vector<Recommendation> recommend(const vector<ResourceInput>& infra) = 0;
+};
