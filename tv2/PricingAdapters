@@ -1,0 +1,44 @@
+#pragma once
+// =====================================================================
+// [TV2] PricingAdapters.h - Cac lop Adapter cu the cho AWS, GCP, Azure
+// Chuan hoa gia ve USD/thang
+// =====================================================================
+#include "IPricingProviderAdapter.h"
+#include <string>
+
+using namespace std;
+
+// Bang gia gia dinh, don vi chuan hoa (dong bo voi app.js)
+struct StubRates {
+    double baseRate;    // USD / gio (base compute rate)
+    double perVcpuHour; // USD / vCPU / gio
+    double ramGB;       // USD / GB RAM / gio
+    double perGbMonth;  // USD / GB / thang (storage)
+    double dbMonth;     // USD / database / thang
+};
+
+class StubPricingAdapter : public IPricingProviderAdapter {
+protected:
+    string name;
+    StubRates rates;
+public:
+    StubPricingAdapter(string pName, StubRates r);
+    string providerName() const override;
+    double getPrice(ResourceType type, const Specification& specs, const Region& region) override;
+};
+
+// 3 Adapter cu the cho 3 nha cung cap
+class AwsPricingAdapter : public StubPricingAdapter {
+public:
+    AwsPricingAdapter();
+};
+
+class GcpPricingAdapter : public StubPricingAdapter {
+public:
+    GcpPricingAdapter();
+};
+
+class AzurePricingAdapter : public StubPricingAdapter {
+public:
+    AzurePricingAdapter();
+};
