@@ -1,0 +1,36 @@
+// =====================================================================
+// [TV5] main_tv5.cpp - Chuong trinh demo rieng cua Thanh vien 5
+// Kiem tra giao dien Console & Menu tuong tac
+// =====================================================================
+#include "ConsoleUI.h"
+#include "../tv1/ConcreteFactories.h"
+#include "../tv2/PricingAdapters.h"
+#include "../tv3/CostCalculator.h"
+#include "../tv3/MultiCloudOptimizationService.h"
+#include "../tv4/CheapestProviderStrategy.h"
+#include "../tv4/RightSizingStrategy.h"
+#include "../tv4/PricingModelStrategy.h"
+#include <memory>
+#include <vector>
+
+using namespace std;
+
+int main() {
+    vector<ProviderBundle> providers;
+    providers.push_back(ProviderBundle{"AWS",   make_unique<AWSResourceFactory>(),   make_unique<AwsPricingAdapter>()});
+    providers.push_back(ProviderBundle{"GCP",   make_unique<GCPResourceFactory>(),   make_unique<GcpPricingAdapter>()});
+    providers.push_back(ProviderBundle{"Azure", make_unique<AzureResourceFactory>(), make_unique<AzurePricingAdapter>()});
+
+    CostCalculator calculator(move(providers), DEFAULT_REGION);
+
+    vector<unique_ptr<ICostOptimizationStrategy>> strategies;
+    strategies.push_back(make_unique<CheapestProviderStrategy>());
+    strategies.push_back(make_unique<RightSizingStrategy>());
+    strategies.push_back(make_unique<PricingModelStrategy>());
+
+    MultiCloudOptimizationService service(move(calculator), move(strategies), "AWS");
+
+    ConsoleUI ui(service, service);
+    ui.run();
+    return 0;
+}
